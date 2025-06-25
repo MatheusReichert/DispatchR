@@ -43,19 +43,24 @@ public static class ServiceCollectionExtensions
         var allTypes = configurationOptions.Assemblies.SelectMany(x => x.GetTypes()).Distinct()
             .Where(p =>
             {
-                var interfaces = p.GetInterfaces();
-                return interfaces.Length >= 1 &&
-                       interfaces
-                           .Where(i => i.IsGenericType)
-                           .Select(i => i.GetGenericTypeDefinition())
-                           .Any(i => new[]
-                           {
-                               requestHandlerType,
-                               pipelineBehaviorType,
-                               streamRequestHandlerType,
-                               streamPipelineBehaviorType,
-                               syncNotificationHandlerType
-                           }.Contains(i));
+                var implementsDispatchRInterface = p.GetInterfaces().Length >= 1 &&
+                                                   p.GetInterfaces()
+                                                       .Where(i => i.IsGenericType)
+                                                       .Select(i => i.GetGenericTypeDefinition())
+                                                       .Any(i => new[]
+                                                       {
+                                                           requestHandlerType,
+                                                           pipelineBehaviorType,
+                                                           streamRequestHandlerType,
+                                                           streamPipelineBehaviorType,
+                                                           syncNotificationHandlerType
+                                                       }.Contains(i));
+                if (configurationOptions.OptionalHandlerNameFilter.Count != 0)
+                {
+                    return implementsDispatchRInterface && configurationOptions.OptionalHandlerNameFilter.Contains(p.Name);
+                }
+
+                return implementsDispatchRInterface;
             }).ToList();
 
         if (configurationOptions.RegisterNotifications)
